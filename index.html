@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multilingual Text Comparison Tool</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-content">
+      <div class="logo-area">
+        <span class="badge">Project 07</span>
+        <h1>Multilingual Text Comparison Tool</h1>
+      </div>
+      <p class="tagline">Token-level lexical comparison, Jaccard &amp; Sørensen-Dice similarity, and vocabulary distribution metrics.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Notice / Disclaimer -->
+    <aside class="notice-banner" role="note">
+      <span class="notice-icon">&#9432;</span>
+      <div>
+        <strong>Lexical Comparison Tool:</strong> This tool computes mathematical token overlap (Jaccard and Dice metrics) using Unicode word boundaries (`\p{L}`). It compares vocabulary overlap and distribution; it does not perform automated machine translation or deep semantic neural inference.
+      </div>
+    </aside>
+
+    <!-- Sample Presets Bar -->
+    <section class="card samples-card">
+      <div class="samples-row">
+        <span class="samples-title">Load Sample Text Pairs:</span>
+        <div class="samples-buttons">
+          <button id="sampleSimilarBtn" class="pill-btn" title="Two English news reports on same topic">Similar English News</button>
+          <button id="sampleMultiBtn" class="pill-btn" title="Romance languages with shared cognates">Spanish vs. French Cognates</button>
+          <button id="sampleDiffBtn" class="pill-btn" title="Two entirely different subjects">Different Topics (Low Overlap)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Side-by-Side Text Inputs -->
+    <div class="input-grid">
+      <!-- Text A Card -->
+      <section class="card input-card">
+        <div class="card-header">
+          <h2 class="section-title">Text Passage A</h2>
+          <span class="input-meta" id="metaTextA">0 words | 0 sentences</span>
+        </div>
+        <div class="textarea-wrapper">
+          <textarea 
+            id="textAInput" 
+            placeholder="Enter or paste the first text passage here (supports English, Spanish, French, German, and Unicode scripts)..." 
+            rows="10"
+            spellcheck="false"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- Text B Card -->
+      <section class="card input-card">
+        <div class="card-header">
+          <h2 class="section-title">Text Passage B</h2>
+          <span class="input-meta" id="metaTextB">0 words | 0 sentences</span>
+        </div>
+        <div class="textarea-wrapper">
+          <textarea 
+            id="textBInput" 
+            placeholder="Enter or paste the second text passage to compare against Passage A..." 
+            rows="10"
+            spellcheck="false"
+          ></textarea>
+        </div>
+      </section>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="card action-toolbar-card">
+      <div class="action-toolbar">
+        <div class="btn-group">
+          <button id="compareBtn" class="btn btn-primary">
+            <span class="btn-icon">&#9878;</span> Compare Passages
+          </button>
+          <button id="clearBtn" class="btn btn-outline">
+            <span class="btn-icon">&#10006;</span> Clear Both
+          </button>
+        </div>
+        <div class="options-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ignoreCaseCheck" checked /> Ignore Letter Case
+          </label>
+        </div>
+      </div>
+      <div id="statusAlert" class="status-alert hidden" role="alert"></div>
+    </div>
+
+    <!-- Empty State -->
+    <section id="emptyState" class="card empty-state">
+      <div class="empty-icon">&#128218;</div>
+      <h3>Ready to Compare Passages</h3>
+      <p>Enter two text passages above or load a sample pair to compute Jaccard similarity, shared vocabulary, and token distributions.</p>
+    </section>
+
+    <!-- Results Section -->
+    <section id="resultsSection" class="results-section hidden">
+      <!-- High-Level Metric Cards Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card highlight-card">
+          <span class="metric-label">Jaccard Similarity</span>
+          <span class="metric-val" id="metricJaccard">0.0%</span>
+          <span class="metric-sub" id="metricJaccardSub">Intersection / Union</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Sørensen-Dice Index</span>
+          <span class="metric-val" id="metricDice">0.0%</span>
+          <span class="metric-sub">Harmonic token overlap</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Shared Words</span>
+          <span class="metric-val" id="metricSharedWords">0</span>
+          <span class="metric-sub">Unique common tokens</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Only in Passage A</span>
+          <span class="metric-val" id="metricOnlyA">0</span>
+          <span class="metric-sub">Tokens unique to A</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Only in Passage B</span>
+          <span class="metric-val" id="metricOnlyB">0</span>
+          <span class="metric-sub">Tokens unique to B</span>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Highlighted Comparison View -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="section-title">Side-by-Side Lexical Token Alignment</h3>
+          <div class="legend-row">
+            <span class="legend-badge badge-shared">Shared Token</span>
+            <span class="legend-badge badge-unique">Unique to Passage</span>
+          </div>
+        </div>
+        <div class="side-by-side-display">
+          <div class="diff-pane">
+            <div class="pane-tag">Passage A View</div>
+            <div id="diffViewA" class="diff-content"></div>
+          </div>
+          <div class="diff-pane">
+            <div class="pane-tag">Passage B View</div>
+            <div id="diffViewB" class="diff-content"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Token Frequency Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="section-title">Token Frequency Breakdown</h3>
+          <input 
+            type="text" 
+            id="tableFilterInput" 
+            class="table-search" 
+            placeholder="Filter vocabulary table..." 
+            aria-label="Filter token table"
+          />
+        </div>
+        <div class="table-container">
+          <table class="freq-table">
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Status</th>
+                <th>Freq in A</th>
+                <th>Freq in B</th>
+                <th>Total Occurrences</th>
+              </tr>
+            </thead>
+            <tbody id="tokenTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container footer-content">
+      <p>Text &amp; Speech Analysis Laboratory &bull; Project 07: Multilingual Text Comparison Tool</p>
+      <p class="footer-meta">Unicode regex tokenization &bull; Jaccard &amp; Dice set metrics &bull; Client-side vanilla JS</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
